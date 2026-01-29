@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>iBeer 🍺</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a1a;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            touch-action: none;
+        }
+
+        .glass {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg,
+                rgba(40,40,40,0.3) 0%,
+                rgba(60,60,60,0.2) 100%);
+            overflow: hidden;
+        }
+
+        .beer-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            transition: height 0.15s ease-out;
+        }
+
+        .beer {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg,
+                #f5a623 0%,
+                #d4920a 50%,
+                #c17f00 100%);
+            position: relative;
+        }
+
+        /* 主要泡沫層 */
+        .foam {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(180deg,
+                rgba(255,255,255,0.95) 0%,
+                rgba(255,248,220,0.98) 50%,
+                rgba(255,240,200,1) 100%);
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+        }
+
+        /* 浮在表面的泡泡容器 */
+        .surface-foam {
+            position: absolute;
+            top: -80px;
+            left: 0;
+            right: 0;
+            height: 90px;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .foam-bubble {
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%,
+                rgba(255,255,255,0.98) 0%,
+                rgba(255,250,240,0.85) 40%,
+                rgba(255,245,220,0.7) 100%);
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: inset 0 -2px 4px rgba(200,180,150,0.3);
+            animation: floatBubble 3s ease-in-out infinite;
+        }
+
+        @keyframes floatBubble {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-3px) translateX(2px); }
+            50% { transform: translateY(-1px) translateX(-2px); }
+            75% { transform: translateY(-4px) translateX(1px); }
+        }
+
+        .bubbles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+            animation: rise linear infinite;
+        }
+
+        @keyframes rise {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100vh) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-fill {
+            background: linear-gradient(135deg, #f5a623, #d4920a);
+            color: white;
+        }
+
+        .btn-reset {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .level-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .debug {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            z-index: 100;
+            font-family: monospace;
+        }
+
+        .permission-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .permission-overlay h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .permission-overlay p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        .permission-overlay .btn {
+            font-size: 24px;
+            padding: 20px 50px;
+        }
+
+        .drink-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 0;
+            background: linear-gradient(180deg,
+                rgba(245,166,35,0.6) 0%,
+                transparent 100%);
+            transition: height 0.2s;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .drinking-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .drinking-indicator.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="permission-overlay" id="permissionOverlay">
+        <h1>🍺</h1>
+        <p>點擊開始體驗虛擬啤酒<br>傾斜手機或長按畫面來「喝」啤酒！</p>
+        <button class="btn btn-fill" onclick="startApp()">開始</button>
+    </div>
+
+    <div class="glass" id="glass">
+        <div class="beer-container" id="beerContainer">
+            <div class="beer">
+                <div class="foam"></div>
+                <div class="surface-foam" id="surfaceFoam"></div>
+                <div class="bubbles" id="bubbles"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="drink-effect" id="drinkEffect"></div>
+    <div class="drinking-indicator" id="drinkingIndicator">🍺</div>
+
+    <div class="level-indicator" id="levelIndicator">100%</div>
+    <div class="debug" id="debug"></div>
+
+    <div class="controls">
+        <button class="btn btn-fill" onclick="pourBeer()">🍺 加酒</button>
+        <button class="btn btn-reset" onclick="resetBeer()">🔄 重置</button>
+    </div>
+
+    <script>
+        let beerLevel = 100;
+        let isDrinking = false;
+        let gyroSupported = false;
+        let hasGyroData = false;
+
+        const beerContainer = document.getElementById('beerContainer');
+        const levelIndicator = document.getElementById('levelIndicator');
+        const bubblesContainer = document.getElementById('bubbles');
+        const surfaceFoam = document.getElementById('surfaceFoam');
+        const drinkEffect = document.getElementById('drinkEffect');
+        const drinkingIndicator = document.getElementById('drinkingIndicator');
+        const debug = document.getElementById('debug');
+
+        // 建立表面泡泡
+        function createSurfaceFoamBubbles() {
+            surfaceFoam.innerHTML = '';
+            const bubbleCount = 30;
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'foam-bubble';
+                const size = Math.random() * 30 + 12;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${Math.random() * 90 + 5}%`;
+                bubble.style.top = `${Math.random() * 50 + 25}px`;
+                bubble.style.animationDelay = `${Math.random() * 3}s`;
+                bubble.style.animationDuration = `${2 + Math.random() * 2}s`;
+                bubble.style.zIndex = Math.floor(Math.random() * 10);
+                surfaceFoam.appendChild(bubble);
+            }
+        }
+
+        // 更新啤酒高度
+        function updateBeerDisplay() {
+            const height = Math.max(0, Math.min(100, beerLevel));
+            beerContainer.style.height = `${height}%`;
+            levelIndicator.textContent = `${Math.round(height)}%`;
+
+            // 泡泡數量隨啤酒減少
+            const foamBubbles = surfaceFoam.querySelectorAll('.foam-bubble');
+            const visibleCount = Math.floor((height / 100) * foamBubbles.length);
+            foamBubbles.forEach((bubble, i) => {
+                bubble.style.opacity = i < visibleCount ? '1' : '0';
+            });
+        }
+
+        // 產生上升氣泡
+        function createBubble() {
+            if (beerLevel <= 0) return;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            const size = Math.random() * 8 + 4;
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.left = `${Math.random() * 100}%`;
+            bubble.style.bottom = '0';
+            bubble.style.animationDuration = `${Math.random() * 2 + 1}s`;
+            bubblesContainer.appendChild(bubble);
+
+            setTimeout(() => bubble.remove(), 3000);
+        }
+
+        setInterval(createBubble, 150);
+
+        // 加酒
+        function pourBeer() {
+            if (beerLevel >= 100) return;
+
+            const pourInterval = setInterval(() => {
+                beerLevel = Math.min(100, beerLevel + 2);
+                updateBeerDisplay();
+
+                if (beerLevel >= 100) {
+                    clearInterval(pourInterval);
+                    createSurfaceFoamBubbles();
+                }
+            }, 50);
+        }
+
+        // 重置
+        function resetBeer() {
+            beerLevel = 100;
+            updateBeerDisplay();
+            createSurfaceFoamBubbles();
+        }
+
+        // 喝酒
+        function drink(intensity) {
+            if (beerLevel <= 0) return;
+
+            const drinkAmount = intensity * 0.8;
+            beerLevel = Math.max(0, beerLevel - drinkAmount);
+            updateBeerDisplay();
+
+            drinkEffect.style.height = `${Math.min(intensity * 5, 40)}%`;
+            drinkingIndicator.classList.add('show');
+        }
+
+        function stopDrinking() {
+            drinkEffect.style.height = '0';
+            drinkingIndicator.classList.remove('show');
+        }
+
+        // 陀螺儀
+        function handleOrientation(event) {
+            let beta = event.beta;  // 前後傾斜 -180~180
+            let gamma = event.gamma; // 左右傾斜 -90~90
+
+            if (beta === null && gamma === null) return;
+
+            hasGyroData = true;
+            debug.textContent = `β: ${beta?.toFixed(0)}° γ: ${gamma?.toFixed(0)}°`;
+
+            let shouldDrink = false;
+            let intensity = 0;
+
+            // beta > 60 表示手機向使用者傾斜（喝酒姿勢）
+            if (beta > 60) {
+                shouldDrink = true;
+                intensity = (beta - 60) / 30; // 60~90 度
+            }
+            // 也支援反向（螢幕朝下傾斜）
+            else if (beta < -60) {
+                shouldDrink = true;
+                intensity = (-beta - 60) / 30;
+            }
+            // 橫向握持
+            if (Math.abs(gamma) > 70) {
+                shouldDrink = true;
+                intensity = Math.max(intensity, (Math.abs(gamma) - 70) / 20);
+            }
+
+            intensity = Math.min(intensity, 1.5);
+
+            if (shouldDrink && beerLevel > 0) {
+                isDrinking = true;
+                drink(intensity);
+            } else {
+                if (isDrinking) {
+                    isDrinking = false;
+                    stopDrinking();
+                }
+            }
+        }
+
+        // 觸控/滑鼠喝酒
+        let touchDrinking = false;
+        let touchInterval = null;
+
+        function setupTouchDrinking() {
+            const glass = document.getElementById('glass');
+
+            const startDrink = (e) => {
+                if (e.target.closest('.controls')) return;
+                e.preventDefault();
+                touchDrinking = true;
+                touchInterval = setInterval(() => {
+                    if (touchDrinking && beerLevel > 0) {
+                        beerLevel = Math.max(0, beerLevel - 1.5);
+                        updateBeerDisplay();
+                        drinkEffect.style.height = '20%';
+                        drinkingIndicator.classList.add('show');
+                    }
+                }, 50);
+            };
+
+            const endDrink = () => {
+                touchDrinking = false;
+                if (touchInterval) {
+                    clearInterval(touchInterval);
+                    touchInterval = null;
+                }
+                stopDrinking();
+            };
+
+            glass.addEventListener('touchstart', startDrink, { passive: false });
+            glass.addEventListener('touchend', endDrink);
+            glass.addEventListener('touchcancel', endDrink);
+            glass.addEventListener('mousedown', startDrink);
+            glass.addEventListener('mouseup', endDrink);
+            glass.addEventListener('mouseleave', endDrink);
+        }
+
+        // 開始
+        async function startApp() {
+            const overlay = document.getElementById('permissionOverlay');
+
+            // iOS 權限請求
+            if (typeof DeviceOrientationEvent !== 'undefined' &&
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        gyroSupported = true;
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    }
+                } catch (error) {
+                    console.log('陀螺儀權限被拒絕:', error);
+                }
+            } else if (window.DeviceOrientationEvent) {
+                gyroSupported = true;
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+
+            overlay.style.display = 'none';
+
+            // 啟用觸控備用
+            setupTouchDrinking();
+
+            // 檢查是否有陀螺儀數據
+            setTimeout(() => {
+                if (!hasGyroData) {
+                    debug.textContent = '長按畫面喝酒 🍺';
+                }
+            }, 1500);
+
+            createSurfaceFoamBubbles();
+        }
+
+        updateBeerDisplay();
+        createSurfaceFoamBubbles();
+    </script>
+</body>
+</html>
