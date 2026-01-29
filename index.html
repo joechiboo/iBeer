@@ -116,17 +116,6 @@
             }
         }
 
-        .btn-fill {
-            background: linear-gradient(135deg, #f5a623, #d4920a);
-            color: white;
-            padding: 15px 30px;
-            font-size: 18px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
         .level-indicator {
             position: fixed;
             top: 20px;
@@ -146,39 +135,6 @@
             font-size: 14px;
             z-index: 100;
             font-family: monospace;
-        }
-
-        .permission-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .permission-overlay h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-
-        .permission-overlay p {
-            font-size: 18px;
-            margin-bottom: 30px;
-            opacity: 0.8;
-        }
-
-        .permission-overlay .btn {
-            font-size: 24px;
-            padding: 20px 50px;
         }
 
         .drink-effect {
@@ -213,12 +169,6 @@
     </style>
 </head>
 <body>
-    <div class="permission-overlay" id="permissionOverlay">
-        <h1>🍺</h1>
-        <p>點擊開始體驗虛擬啤酒<br>傾斜手機或長按畫面來「喝」啤酒<br>點兩下加酒！</p>
-        <button class="btn btn-fill" onclick="startApp()">開始</button>
-    </div>
-
     <div class="glass" id="glass">
         <div class="beer-container" id="beerContainer">
             <div class="beer">
@@ -439,44 +389,44 @@
             glass.addEventListener('mouseleave', endDrink);
         }
 
-        // 開始
-        async function startApp() {
-            const overlay = document.getElementById('permissionOverlay');
-
-            // iOS 權限請求
+        // 初始化陀螺儀
+        function initGyro() {
             if (typeof DeviceOrientationEvent !== 'undefined' &&
                 typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') {
-                        gyroSupported = true;
-                        window.addEventListener('deviceorientation', handleOrientation);
+                // iOS 需要用戶手勢觸發權限請求
+                let gyroRequested = false;
+                document.addEventListener('touchstart', async function requestGyro() {
+                    if (gyroRequested) return;
+                    gyroRequested = true;
+                    try {
+                        const permission = await DeviceOrientationEvent.requestPermission();
+                        if (permission === 'granted') {
+                            gyroSupported = true;
+                            window.addEventListener('deviceorientation', handleOrientation);
+                        }
+                    } catch (error) {
+                        console.log('陀螺儀權限被拒絕:', error);
                     }
-                } catch (error) {
-                    console.log('陀螺儀權限被拒絕:', error);
-                }
+                    document.removeEventListener('touchstart', requestGyro);
+                }, { once: true });
             } else if (window.DeviceOrientationEvent) {
                 gyroSupported = true;
                 window.addEventListener('deviceorientation', handleOrientation);
             }
-
-            overlay.style.display = 'none';
-
-            // 啟用觸控備用
-            setupTouchDrinking();
-
-            // 檢查是否有陀螺儀數據
-            setTimeout(() => {
-                if (!hasGyroData) {
-                    debug.textContent = '長按喝酒 · 點兩下加酒 🍺';
-                }
-            }, 1500);
-
-            createSurfaceFoamBubbles();
         }
 
+        // 自動啟動
+        initGyro();
+        setupTouchDrinking();
         updateBeerDisplay();
         createSurfaceFoamBubbles();
+
+        // 檢查是否有陀螺儀數據
+        setTimeout(() => {
+            if (!hasGyroData) {
+                debug.textContent = '長按喝酒 · 點兩下加酒 🍺';
+            }
+        }, 1500);
     </script>
 </body>
 </html>
