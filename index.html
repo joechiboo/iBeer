@@ -116,38 +116,15 @@
             }
         }
 
-        .controls {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            display: flex;
-            gap: 15px;
-        }
-
-        .btn {
+        .btn-fill {
+            background: linear-gradient(135deg, #f5a623, #d4920a);
+            color: white;
             padding: 15px 30px;
             font-size: 18px;
             border: none;
             border-radius: 25px;
             cursor: pointer;
             font-weight: bold;
-            transition: transform 0.1s;
-        }
-
-        .btn:active {
-            transform: scale(0.95);
-        }
-
-        .btn-fill {
-            background: linear-gradient(135deg, #f5a623, #d4920a);
-            color: white;
-        }
-
-        .btn-reset {
-            background: rgba(255,255,255,0.2);
-            color: white;
         }
 
         .level-indicator {
@@ -238,7 +215,7 @@
 <body>
     <div class="permission-overlay" id="permissionOverlay">
         <h1>🍺</h1>
-        <p>點擊開始體驗虛擬啤酒<br>傾斜手機或長按畫面來「喝」啤酒！</p>
+        <p>點擊開始體驗虛擬啤酒<br>傾斜手機或長按畫面來「喝」啤酒<br>點兩下加酒！</p>
         <button class="btn btn-fill" onclick="startApp()">開始</button>
     </div>
 
@@ -258,10 +235,6 @@
     <div class="level-indicator" id="levelIndicator">100%</div>
     <div class="debug" id="debug"></div>
 
-    <div class="controls">
-        <button class="btn btn-fill" onclick="pourBeer()">🍺 加酒</button>
-        <button class="btn btn-reset" onclick="resetBeer()">🔄 重置</button>
-    </div>
 
     <script>
         let beerLevel = 100;
@@ -330,9 +303,10 @@
 
         setInterval(createBubble, 150);
 
-        // 加酒
+        // 加酒（雙擊觸發）
         function pourBeer() {
-            if (beerLevel >= 100) return;
+            if (beerLevel >= 100 || isPouring) return;
+            isPouring = true;
 
             const pourInterval = setInterval(() => {
                 beerLevel = Math.min(100, beerLevel + 2);
@@ -341,15 +315,9 @@
                 if (beerLevel >= 100) {
                     clearInterval(pourInterval);
                     createSurfaceFoamBubbles();
+                    isPouring = false;
                 }
             }, 50);
-        }
-
-        // 重置
-        function resetBeer() {
-            beerLevel = 100;
-            updateBeerDisplay();
-            createSurfaceFoamBubbles();
         }
 
         // 喝酒
@@ -411,28 +379,50 @@
             }
         }
 
-        // 觸控/滑鼠喝酒
+        // 觸控/滑鼠喝酒 + 雙擊加酒
         let touchDrinking = false;
         let touchInterval = null;
+        let lastTapTime = 0;
+        let tapTimeout = null;
+        let isPouring = false;
 
         function setupTouchDrinking() {
             const glass = document.getElementById('glass');
 
             const startDrink = (e) => {
-                if (e.target.closest('.controls')) return;
                 e.preventDefault();
-                touchDrinking = true;
-                touchInterval = setInterval(() => {
-                    if (touchDrinking && beerLevel > 0) {
-                        beerLevel = Math.max(0, beerLevel - 1.5);
-                        updateBeerDisplay();
-                        drinkEffect.style.height = '20%';
-                        drinkingIndicator.classList.add('show');
-                    }
-                }, 50);
+                if (isPouring) return;
+
+                const now = Date.now();
+                const timeSinceLastTap = now - lastTapTime;
+
+                // 偵測雙擊（300ms 內連續點兩下）
+                if (timeSinceLastTap < 300) {
+                    // 雙擊 → 加酒
+                    clearTimeout(tapTimeout);
+                    lastTapTime = 0;
+                    pourBeer();
+                    return;
+                }
+
+                lastTapTime = now;
+
+                // 延遲啟動喝酒，避免雙擊時誤觸
+                tapTimeout = setTimeout(() => {
+                    touchDrinking = true;
+                    touchInterval = setInterval(() => {
+                        if (touchDrinking && beerLevel > 0) {
+                            beerLevel = Math.max(0, beerLevel - 1.5);
+                            updateBeerDisplay();
+                            drinkEffect.style.height = '20%';
+                            drinkingIndicator.classList.add('show');
+                        }
+                    }, 50);
+                }, 300);
             };
 
             const endDrink = () => {
+                clearTimeout(tapTimeout);
                 touchDrinking = false;
                 if (touchInterval) {
                     clearInterval(touchInterval);
@@ -478,7 +468,7 @@
             // 檢查是否有陀螺儀數據
             setTimeout(() => {
                 if (!hasGyroData) {
-                    debug.textContent = '長按畫面喝酒 🍺';
+                    debug.textContent = '長按喝酒 · 點兩下加酒 🍺';
                 }
             }, 1500);
 
