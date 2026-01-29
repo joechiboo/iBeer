@@ -1,13 +1,13 @@
 # iBeer
 
-Virtual beer drinking app for mobile browsers.
+手機瀏覽器上的虛擬喝啤酒 App。
 
-## How to Use
+## 操作方式
 
-- **Long press** the screen to drink
-- **Double tap** to refill
-- **Tilt your phone** (gyroscope supported) to drink hands-free
+- **長按畫面** — 喝酒
+- **點兩下** — 加酒
+- **傾斜手機** — 支援陀螺儀，傾斜即可喝酒
 
 ## Demo
 
-Open `index.html` on your phone or visit the GitHub Pages URL.
+用手機打開 `index.html` 或前往 GitHub Pages 網址。
